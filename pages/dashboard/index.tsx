@@ -1,3 +1,4 @@
+import { useWeb3Modal } from "@web3modal/react";
 import { google } from "googleapis";
 import { useEffect, useMemo, useState } from "react";
 import { Container, Stack } from "react-bootstrap";
@@ -35,6 +36,7 @@ export async function getServerSideProps() {
 
 export default function Dashboard({ data }: { data: string[] }) {
   const { address } = useAccount();
+  const { open } = useWeb3Modal();
   const { read } = useSmartContract();
   const [vouchers, setVouchers] = useState([]);
   useEffect(() => {
@@ -49,6 +51,12 @@ export default function Dashboard({ data }: { data: string[] }) {
     if (!data) return [];
     return data.filter((t) => t[0] === address);
   }, [data, address]);
+
+  useEffect(()=>{
+    if(!address){
+      open()
+    }
+  },[address, open])
 
   return (
     <>

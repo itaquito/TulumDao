@@ -153,7 +153,7 @@ export default function Home() {
       <Container className='flex-lg-row-reverse align-items-center g-5 py-5'>
         <Row className='flex-lg-row-reverse align-items-center g-5 py-5'>
           <Col className='col-10 col-sm-8 col-lg-6'>
-            <Image src="https://drive.google.com/uc?export=view&id=1ncS8AN7xsO8nrGPCMwGMYP4c6os1sdmM" className="d-block mx-lg-auto img-fluid rounded" alt="" loading="lazy" />
+            <img src="https://drive.google.com/uc?export=view&id=1ncS8AN7xsO8nrGPCMwGMYP4c6os1sdmM" className="d-block mx-lg-auto img-fluid rounded" alt="" loading="lazy" />
           </Col>
           <Col className='col-lg-6'>
             <div className="lc-block mb-3">
@@ -187,7 +187,7 @@ export default function Home() {
             </Stack>
           </Col>
           <Col className='col-10 col-sm-8 col-lg-6'>
-            <Image src="https://drive.google.com/uc?export=view&id=10RDBBwoeNMMQXaVQ4kpWnyw88qa869Kj" className="d-block mx-lg-auto img-fluid rounded" alt="" loading="lazy" />
+            <img src="https://drive.google.com/uc?export=view&id=10RDBBwoeNMMQXaVQ4kpWnyw88qa869Kj" className="d-block mx-lg-auto img-fluid rounded" alt="" loading="lazy" />
           </Col>
         </Row>
       </Container>
@@ -256,7 +256,7 @@ export default function Home() {
       <Container className='flex-lg-row-reverse align-items-center g-5 py-5'>
         <Row className='flex-lg-row-reverse align-items-center g-5 py-5'>
           <Col className='col-10 col-sm-8 col-lg-6'>
-            <Image src="https://drive.google.com/uc?export=view&id=1eSNrY8h0AMyAiK5Y5f7Mk_rMjN0qAxf9" className="d-block mx-lg-auto img-fluid rounded" alt="" loading="lazy" />
+            <img src="https://drive.google.com/uc?export=view&id=1eSNrY8h0AMyAiK5Y5f7Mk_rMjN0qAxf9" className="d-block mx-lg-auto img-fluid rounded" alt="" loading="lazy" />
           </Col>
           <Col className='col-lg-6'>
             <div className="lc-block mb-3">
@@ -330,7 +330,7 @@ export default function Home() {
             </div>
           </Col>
           <Col className='col-10 col-sm-8 col-lg-6'>
-            <Image src="https://drive.google.com/uc?export=view&id=10RDBBwoeNMMQXaVQ4kpWnyw88qa869Kj" className="d-block mx-lg-auto img-fluid rounded" alt="" loading="lazy" />
+            <img src="https://drive.google.com/uc?export=view&id=10RDBBwoeNMMQXaVQ4kpWnyw88qa869Kj" className="d-block mx-lg-auto img-fluid rounded" alt="" loading="lazy" />
           </Col>
         </Row>
       </Container>

@@ -19,6 +19,7 @@ import { useState, useCallback } from "react";
 import { useSmartContract } from "../../src/lib/providers/SmartContractProvider";
 import { useAccount, useContractWrite, usePrepareContractWrite } from "wagmi";
 import KYCModal, { ModalData } from "../../src/components/KYCModal";
+import { useWeb3Modal } from "@web3modal/react";
 
 const ProfileImage = styled.img`
   border-radius: 50%;
@@ -35,14 +36,21 @@ const ContainerW50 = styled(Row)`
   }
 `;
 
+type State = {
+    kyc?: ModalData,
+    eula: boolean
+}
+
 export default function Investment() {
+  const { open } = useWeb3Modal();
+  const [state, setState] = useState<State>({eula: false}) //TODO: do something with the data
   const [showModal, setShowModal] = useState(false);
   const hideModal = useCallback(() => {
     setShowModal(false);
   }, []);
 
   const submitModal = useCallback(async (data: ModalData) => {
-    console.log(data); //TODO: do something with the data
+    setState((prev)=>({...prev, kyc: data}))
   }, []);
   const { address } = useAccount();
   const [amount, setAmount] = useState(0);
@@ -84,6 +92,14 @@ export default function Investment() {
     args: [address as any, amount as any, 0 as any],
   });
   const { write } = useContractWrite(config);
+  const onMint = useCallback(()=>{
+    if(amount <= 0) return;
+    if(!address){
+        open()
+    }else if(write){
+        write()
+    }
+  },[write, amount, address, open])
   console.log(write);
   return (
     <>
@@ -120,7 +136,9 @@ export default function Investment() {
               Estos son todos los terminos y condiciones relevantes para la obra
               y la distribucion de la ganancia on-chain.
             </p>
-            <BtnGreen>Aceptar</BtnGreen>
+            <fieldset disabled={state.kyc ? state.eula : true}>
+                <BtnGreen onClick={()=>setState((prev)=>({...prev, eula: true}))}>Aceptar</BtnGreen>
+            </fieldset>
           </Col>
         </Row>
       </ContainerW50>
@@ -135,6 +153,7 @@ export default function Investment() {
                 <h1 className="fw-bold h4 text-center" color="#4A4A4A">
                   Comprar cupón de inversión
                 </h1>
+                <fieldset disabled={!state.eula}>
                 <Row className="mb-3">
                   <Col xs={4}>
                     <Form.Group controlId="formGridState">
@@ -203,7 +222,8 @@ export default function Investment() {
                   </div>
                 </Container>
                 <BtnGreen
-                  onClick={write}
+                  disabled={amount <= 0}
+                  onClick={onMint}
                   className="w-100 my-2"
                   style={{ height: "3rem" }}
                 >
@@ -212,6 +232,7 @@ export default function Investment() {
                 <BtnGreen className="w-100 my-2" style={{ height: "3rem" }}>
                   Comprar con tarjeta de crédito
                 </BtnGreen>
+                </fieldset>
               </Form>
             </Container>
           </Col>

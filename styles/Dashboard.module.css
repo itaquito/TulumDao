@@ -1,7 +1,7 @@
 .grid-container {
   display: grid;
   grid-template-columns: 0.8fr repeat(4, 1fr);
-  grid-template-rows: repeat(4, 1fr);
+  grid-template-rows: repeat(3, 1fr) 0.8fr;
   grid-gap: 15px;
   width: 100%;
   margin-bottom: 2rem;
@@ -13,7 +13,7 @@
 }
 
 .grid-text {
-  font-weight: 600;
+  font-weight: 700;
   font-size: 1.5rem;
 }
 
@@ -56,6 +56,9 @@
   grid-row: 4/-1;
   align-self: center;
   justify-self: center;
+  height: 100%;
+  display: flex;
+  align-items: end;
 }
 
 .description {

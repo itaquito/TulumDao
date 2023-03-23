@@ -55,7 +55,7 @@ export default function Dashboard() {
           </Card>
 
           <Card className={`${classes["grid-item6"]} `}>
-            <ProgressCircle percentage="35" />
+            <ProgressCircle percentage="73" />
             <p className={`${classes["description"]} `}>
               Rendimientos proyectados para esta obra basado en tu inversión.
             </p>
@@ -195,7 +195,15 @@ export default function Dashboard() {
           </Card>
 
           <div className={`${classes["grid-item8"]}`}>
-            <BtnGreen>Volver a Invertir</BtnGreen>
+            <BtnGreen
+              style={{
+                height: "70%",
+                padding: "0rem 2rem",
+                whiteSpace: "nowrap",
+              }}
+            >
+              Volver a Invertir
+            </BtnGreen>
           </div>
         </div>
 

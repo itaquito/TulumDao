@@ -8,8 +8,20 @@ import Card from "../../src/components/Card/Card";
 import { CiMoneyBill } from "react-icons/ci";
 import { AiOutlineBell } from "react-icons/ai";
 import ProgressCircle from "../../src/components/ProgressCircle/ProgressCircle";
+import { useAccount } from "wagmi";
+import { useSmartContract } from "../../src/lib/providers/SmartContractProvider";
+import { useState, useEffect } from "react";
 
 export default function Dashboard() {
+  const { address } = useAccount()
+  const { read } = useSmartContract();
+  const [vouchers, setVouchers] = useState([])
+  useEffect(()=>{
+    if(!address)return;
+        read("getWallet", [address])
+        .then((r) => setVouchers(r as any))
+        .catch((e) => console.error(e))
+    },[read, address])
   return (
     <>
       <Container className="my-5">
@@ -39,7 +51,7 @@ export default function Dashboard() {
 
           <Card className={`${classes["grid-item5"]}`}>
             <h4 className={`${classes["grid-title"]}`}>Tus tokens</h4>
-            <p className={`${classes["grid-text"]}`}>2 vouchers</p>
+            <p className={`${classes["grid-text"]}`}>{vouchers.length} vouchers</p>
           </Card>
 
           <Card className={`${classes["grid-item6"]} `}>

@@ -67,7 +67,7 @@ export default function KYCModal({ visible, onHide, onSubmit }: Props) {
                   Esta verificación es conducida por una compañia independiente
                   para asegurarnos de cumplir con las normas y regulaciones.
                 </p>
-                <BtnGreenSquared href="/SOLICITUD_DE_INVERSION_CQA.pdf" download>Descargar</BtnGreenSquared>
+                <BtnGreenSquared href="/KYC CQA RESERVA KAAX.xlsm" download>Descargar</BtnGreenSquared>
               </Col>
               <Col>
                 <BsBricks

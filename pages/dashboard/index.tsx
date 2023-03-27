@@ -15,6 +15,7 @@ import classes from "../../styles/Dashboard.module.css";
 
 export async function getServerSideProps() {
   const auth = await google.auth.getClient({
+    credentials: JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS as any),
     scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"],
   });
 

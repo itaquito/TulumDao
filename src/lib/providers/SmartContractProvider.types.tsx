@@ -4,6 +4,7 @@ import { useContractWrite } from "wagmi";
 import { SendTransactionResult } from "@wagmi/core";
 
 export type Address = `0x${string}` 
+export type ReadFunction = (functionName: string, args?: any[], overrides?: Overrides) => Promise<Result>
 
 interface ABIVar {
   internalType: string;
@@ -33,7 +34,7 @@ export interface SmartContractProviderProps {
 export type SmartContractContextType = {
   contractAddress: Address;
   getABI: (functionName: string) => ABIObject | undefined;
-  read: (functionName: string, args?: any[], overrides?: Overrides) => Promise<Result>;
+  read: ReadFunction;
   write: (
     functionName: string,
     args?: any[],

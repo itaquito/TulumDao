@@ -16,7 +16,9 @@ import BtnGreenSquared from "../../src/components/BtnGreenSquared";
 import KYCModal, { ModalData } from "../../src/components/KYCModal";
 import TermsModal from "../../src/components/TermsModal";
 import TokenCard from "../../src/components/TokenCard";
+import TokensDropdown, { TokenState } from "../../src/components/TokensDropdown";
 import { useSmartContract } from "../../src/lib/providers/SmartContractProvider";
+import ERC20TokensProvider from "../../src/providers/ERC20TokensProvider";
 
 const ProfileImage = styled.img`
   border-radius: 50%;
@@ -36,12 +38,17 @@ const ContainerW50 = styled(Row)`
 type State = {
     kyc?: ModalData,
     eula: boolean,
-    tokenIndex: number
+    token: TokenState
 }
+
+function numberWithCommas(x: number) {
+  return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
 
 export default function Investment() {
   const { open } = useWeb3Modal();
-  const [state, setState] = useState<State>({eula: false, tokenIndex: 0}) //TODO: do something with the data
+  const [state, setState] = useState<State>({eula: false, token: {symbol: "", pid: 0}}) //TODO: do something with the data
   const [showModal, setShowModal] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
   const [mintWhenConnected, setMintWhenConnected] = useState(false)
@@ -54,6 +61,9 @@ export default function Investment() {
   }, []);
   const onAcceptTerms = useCallback(async ()=>{
     setState((prev)=>({...prev, eula: true}))
+  },[])
+  const onChangeToken = useCallback((token: TokenState)=>{
+    setState((prev)=>({...prev, token: token}))
   },[])
 
   const submitModal = useCallback(async (data: ModalData) => {
@@ -69,7 +79,7 @@ export default function Investment() {
     address: contractAddress,
     abi: [ABI],
     functionName: "mint",
-    args: [address, amount, state.tokenIndex]
+    args: [address, amount, state.token.pid]
   });
   const { write, isLoading, isSuccess, isError, error } = useContractWrite(prepareContract.config);
   const onMint = useCallback(async ()=>{
@@ -96,20 +106,20 @@ export default function Investment() {
   },[isSuccess])
   const [price, setPrice] = useState(0)
   useEffect(()=>{
-    read("AllowedCrypto", [state.tokenIndex]).then((res: any)=>{
+    read("AllowedCrypto", [state.token.pid]).then((res: any)=>{
       setPrice(res[1].toNumber())
     })
-  },[read, state.tokenIndex])
+  },[read, state.token.pid])
   const [canMint, setCanMint] = useState<boolean>(true)
   useEffect(()=>{
     if(prepareContract.error && address && amount){
-      read("canMint", [ amount, state.tokenIndex]).then((res: any)=>{
+      read("canMint", [ amount, state.token.pid]).then((res: any)=>{
         setCanMint(res)
       })
     }else{
       setCanMint(true)
     }
-  },[read, prepareContract.error, address, amount, state.tokenIndex])
+  },[read, prepareContract.error, address, amount, state.token.pid])
   return (
     <>
       <KYCModal visible={showModal} onHide={hideModal} onSubmit={submitModal} />
@@ -179,17 +189,13 @@ export default function Investment() {
                 <fieldset disabled={!state.eula}>
                 <Row className="mb-3">
                   <Col xs={4}>
-                    <Form.Group controlId="formGridState">
-                      <Form.Label className="fw-bold">De</Form.Label>
-                      <Form.Select defaultValue="Choose...">
-                        <option>USDT</option>
-                        <option>...</option>
-                      </Form.Select>
-                    </Form.Group>
+                    <ERC20TokensProvider>
+                      <TokensDropdown label="De" onChange={onChangeToken}/>
+                      </ERC20TokensProvider>
                   </Col>
                   <Col xs={8}>
                     <Form.Group controlId="formGridCity">
-                      <Form.Label className="fw-bold">Amount</Form.Label>
+                      <Form.Label className="fw-bold">Cantidad</Form.Label>
                       <Form.Control
                         onChange={({ target }) =>
                           setAmount(target.value ? parseInt(target.value) : 0)
@@ -214,7 +220,8 @@ export default function Investment() {
                 >
                   <div className="d-flex justify-content-between">
                     <p>Precio</p>
-                    <p>${price*amount} USDT</p>
+                    {state.token.symbol ? <p>${numberWithCommas(price*amount)} {state.token.symbol}</p> : <p>Cargando...</p>}
+                    
                   </div>
                   <div className="d-flex justify-content-between">
                     <p>Vas a recibir</p>
@@ -232,7 +239,7 @@ export default function Investment() {
                   style={{ height: "3rem" }}
                 >
                   {(isLoading ||  prepareContract.isLoading) && <><Spinner size="sm"/>{" "}</>}
-                  Comprar con Metamask
+                  {state.token.symbol ? `Comprar con ${state.token.symbol}` : "Cargando..." }
                 </BtnGreen>
                 <div className="text-muted text-center">
                   {!canMint && "¡Saldo insuficiente!"}

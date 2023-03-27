@@ -9,17 +9,21 @@ import {
   Badge,
   Form,
   Stack,
+  Spinner,
+  Modal,
 } from "react-bootstrap";
 import { TbWorld } from "react-icons/tb";
-import { BsBricks } from "react-icons/bs";
+import { BsBricks, BsCheckCircle } from "react-icons/bs";
 import { HiArrowsUpDown } from "react-icons/hi2";
 import TokenCard from "../../src/components/TokenCard";
 import { BtnGreen } from "../../src/components/BtnGreen";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useSmartContract } from "../../src/lib/providers/SmartContractProvider";
 import { useAccount, useContractWrite, usePrepareContractWrite } from "wagmi";
 import KYCModal, { ModalData } from "../../src/components/KYCModal";
 import { useWeb3Modal } from "@web3modal/react";
+import TermsModal from "../../src/components/TermsModal";
+import BtnGreenSquared from "../../src/components/BtnGreenSquared";
 
 const ProfileImage = styled.img`
   border-radius: 50%;
@@ -45,9 +49,17 @@ export default function Investment() {
   const { open } = useWeb3Modal();
   const [state, setState] = useState<State>({eula: false}) //TODO: do something with the data
   const [showModal, setShowModal] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
+  const [mintWhenConnected, setMintWhenConnected] = useState(false)
   const hideModal = useCallback(() => {
     setShowModal(false);
   }, []);
+  const hideTerms = useCallback(() => {
+    setShowTerms(false);
+  }, []);
+  const onAcceptTerms = useCallback(async ()=>{
+    setState((prev)=>({...prev, eula: true}))
+  },[])
 
   const submitModal = useCallback(async (data: ModalData) => {
     setState((prev)=>({...prev, kyc: data}))
@@ -91,18 +103,46 @@ export default function Investment() {
     functionName: "mint",
     args: [address as any, amount as any, 0 as any],
   });
-  const { write } = useContractWrite(config);
-  const onMint = useCallback(()=>{
+  const { write, isLoading, isSuccess, isError, error } = useContractWrite(config);
+  const onMint = useCallback(async ()=>{
     if(amount <= 0) return;
     if(!address){
         open()
+        setMintWhenConnected(true)
     }else if(write){
         write()
     }
   },[write, amount, address, open])
+  useEffect(()=>{
+    if(mintWhenConnected && address){
+      setMintWhenConnected(false)
+      onMint()
+    }
+  },[onMint, address, mintWhenConnected])
+
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  useEffect(()=>{
+    if(isSuccess){
+      setShowSuccessModal(true)
+    }
+  },[isSuccess])
   return (
     <>
       <KYCModal visible={showModal} onHide={hideModal} onSubmit={submitModal} />
+      <TermsModal visible={showTerms} onHide={hideTerms} onAccept={onAcceptTerms}/>
+      <Modal show={showSuccessModal} dialogClassName="modal-dialog modal-dialog-centered" onHide={()=>setShowSuccessModal(false)}>
+        <Modal.Title>
+          <div className="h3 p-5 text-center">¡Transacción completada de forma exitosa!</div>
+        </Modal.Title>
+        <Modal.Body>
+            <div className="text-center">
+              <div className="mb-5">
+                <BsCheckCircle size={100} className="text-success"/>
+              </div>
+              <BtnGreenSquared>Ir al Dashboard</BtnGreenSquared>
+            </div>
+        </Modal.Body>
+      </Modal>
       <ContainerW50 className="mx-auto border p-5 mt-5">
         <h1 className="fw-bold h3">Antes de Invertir</h1>
         <p>
@@ -121,7 +161,7 @@ export default function Investment() {
               Esta verificación es conducida por una compañia independiente para
               asegurarnos de cumplir con las normas y regulaciones.
             </p>
-            <BtnGreen onClick={()=>setShowModal(true)}>Completar</BtnGreen>
+            <BtnGreen disabled={state.kyc ? true : false} onClick={()=>setShowModal(true)}>Completar</BtnGreen>
           </Col>
           <Col lg={6}>
             <BsBricks
@@ -136,7 +176,7 @@ export default function Investment() {
               y la distribucion de la ganancia on-chain.
             </p>
             <fieldset disabled={state.kyc ? state.eula : true}>
-                <BtnGreen onClick={()=>setState((prev)=>({...prev, eula: true}))}>Aceptar</BtnGreen>
+                <BtnGreen onClick={()=>setShowTerms(true)}>Aceptar</BtnGreen>
             </fieldset>
           </Col>
         </Row>
@@ -147,7 +187,7 @@ export default function Investment() {
             <TokenCard></TokenCard>
           </Col>
           <Col lg={6}>
-            <Container className="w-75 mx-auto">
+            <Container className="w-75 mx-auto" style={{minHeight: 600}}>
               <Form>
                 <h1 className="fw-bold h4 text-center" color="#4A4A4A">
                   Comprar cupón de inversión
@@ -180,28 +220,6 @@ export default function Investment() {
                     </Form.Group>
                   </Col>
                 </Row>
-                <HiArrowsUpDown size={32} />
-                <Row className="mt-3 mb-5">
-                  <Col xs={4}>
-                    <Form.Group controlId="formGridCity">
-                      <Form.Label>Hacia</Form.Label>
-                      <Form.Control />
-                      <Form.Text className="text-muted">Cupón</Form.Text>
-                    </Form.Group>
-                  </Col>
-                  <Col xs={8}>
-                    <Form.Group controlId="formGridCity">
-                      <Form.Label>Amount</Form.Label>
-                      <Form.Control />
-                      <Form.Text className="text-muted">
-                        Balance{" "}
-                        <Badge pill bg="light" text="dark">
-                          $1,000,000.00
-                        </Badge>
-                      </Form.Text>
-                    </Form.Group>
-                  </Col>
-                </Row>
                 <h6>Summary</h6>
                 <Container
                   className="py-2 mb-3"
@@ -213,24 +231,25 @@ export default function Investment() {
                   </div>
                   <div className="d-flex justify-content-between">
                     <p>Vas a recibir</p>
-                    <p>2 cupones de inversión</p>
+                    <p>{amount} cupones de inversión</p>
                   </div>
-                  <div className="d-flex justify-content-between">
+                  {/* <div className="d-flex justify-content-between">
                     <p>Fee</p>
                     <p>1 USDT</p>
-                  </div>
+                  </div> */}
                 </Container>
                 <BtnGreen
-                  disabled={amount <= 0}
+                  disabled={amount <= 0 || isLoading}
                   onClick={onMint}
                   className="w-100 my-2"
                   style={{ height: "3rem" }}
                 >
+                  {isLoading && <><Spinner size="sm"/>{" "}</>}
                   Comprar con Metamask
                 </BtnGreen>
-                <BtnGreen className="w-100 my-2" style={{ height: "3rem" }}>
+                {/* <BtnGreen className="w-100 my-2" style={{ height: "3rem" }}>
                   Comprar con tarjeta de crédito
-                </BtnGreen>
+                </BtnGreen> */}
                 </fieldset>
               </Form>
             </Container>

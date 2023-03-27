@@ -30,7 +30,6 @@ export default function KYCModal({ visible, onHide, onSubmit }: Props) {
 
   const onSubmitCallback = useCallback(async () => {
     try{
-      console.log(state)
       if(state.nombre && state.rfc && state.kyc && state.solicitud){
         onSubmit && await onSubmit(state);
         onHide && onHide()

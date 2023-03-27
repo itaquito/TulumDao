@@ -100,7 +100,6 @@ export default function Investment() {
         write()
     }
   },[write, amount, address, open])
-  console.log(write);
   return (
     <>
       <KYCModal visible={showModal} onHide={hideModal} onSubmit={submitModal} />

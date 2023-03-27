@@ -49,7 +49,6 @@ export default function TermsModal({ visible, onHide, onAccept }: Props) {
         onHideCallback()
   },[onHideCallback, onAccept])
   const [t,setT] = useState<any>()
-  console.log(t && {...t})
 
   return (
     <Modal

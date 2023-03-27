@@ -1,29 +1,22 @@
-import "slick-carousel/slick/slick.css";
-import "slick-carousel/slick/slick-theme.css";
-import styled from "styled-components";
-import {
-  Col,
-  Container,
-  Row,
-  Button,
-  Badge,
-  Form,
-  Stack,
-  Spinner,
-  Modal,
-} from "react-bootstrap";
-import { TbWorld } from "react-icons/tb";
-import { BsBricks, BsCheckCircle } from "react-icons/bs";
-import { HiArrowsUpDown } from "react-icons/hi2";
-import TokenCard from "../../src/components/TokenCard";
-import { BtnGreen } from "../../src/components/BtnGreen";
-import { useState, useCallback, useEffect } from "react";
-import { useSmartContract } from "../../src/lib/providers/SmartContractProvider";
-import { useAccount, useContractWrite, usePrepareContractWrite } from "wagmi";
-import KYCModal, { ModalData } from "../../src/components/KYCModal";
 import { useWeb3Modal } from "@web3modal/react";
-import TermsModal from "../../src/components/TermsModal";
+import { useRouter } from "next/router";
+import { useCallback, useEffect, useState } from "react";
+import {
+  Badge, Col,
+  Container, Form, Modal, Row, Spinner
+} from "react-bootstrap";
+import { BsBricks, BsCheckCircle } from "react-icons/bs";
+import { TbWorld } from "react-icons/tb";
+import "slick-carousel/slick/slick-theme.css";
+import "slick-carousel/slick/slick.css";
+import styled from "styled-components";
+import { useAccount, useContractWrite, usePrepareContractWrite } from "wagmi";
+import { BtnGreen } from "../../src/components/BtnGreen";
 import BtnGreenSquared from "../../src/components/BtnGreenSquared";
+import KYCModal, { ModalData } from "../../src/components/KYCModal";
+import TermsModal from "../../src/components/TermsModal";
+import TokenCard from "../../src/components/TokenCard";
+import { useSmartContract } from "../../src/lib/providers/SmartContractProvider";
 
 const ProfileImage = styled.img`
   border-radius: 50%;
@@ -51,6 +44,7 @@ export default function Investment() {
   const [showModal, setShowModal] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
   const [mintWhenConnected, setMintWhenConnected] = useState(false)
+  const {push} = useRouter()
   const hideModal = useCallback(() => {
     setShowModal(false);
   }, []);
@@ -66,7 +60,7 @@ export default function Investment() {
   }, []);
   const { address } = useAccount();
   const [amount, setAmount] = useState(0);
-  //const { write } = useSmartContract();
+  const { read } = useSmartContract();
   /*const mint = useCallback(()=>{
         write("mint", [address, amount , 0])
         .then((r) => (r as any).write())
@@ -74,7 +68,7 @@ export default function Investment() {
     },[write, address, amount])
     */
   const { config } = usePrepareContractWrite({
-    address: "0x7E5d1bd04280E1Ca2c5Aa2567fA5184094Fc87E5",
+    address: "0xAC1e5E3Ef7CEE6b26a81C8Fc19D13Cd63B7701c3",
     abi: [
       {
         inputs: [
@@ -126,6 +120,12 @@ export default function Investment() {
       setShowSuccessModal(true)
     }
   },[isSuccess])
+  const [price, setPrice] = useState(0)
+  useEffect(()=>{
+    read("AllowedCrypto", [0]).then((res: any)=>{
+      setPrice(res[1].toNumber())
+    })
+  },[read])
   return (
     <>
       <KYCModal visible={showModal} onHide={hideModal} onSubmit={submitModal} />
@@ -139,7 +139,7 @@ export default function Investment() {
               <div className="mb-5">
                 <BsCheckCircle size={100} className="text-success"/>
               </div>
-              <BtnGreenSquared>Ir al Dashboard</BtnGreenSquared>
+              <BtnGreenSquared onClick={()=>push("/dashboard")}>Ir al Dashboard</BtnGreenSquared>
             </div>
         </Modal.Body>
       </Modal>
@@ -227,7 +227,7 @@ export default function Investment() {
                 >
                   <div className="d-flex justify-content-between">
                     <p>Precio</p>
-                    <p>10,000.00 USDT</p>
+                    <p>${price*amount} USDT</p>
                   </div>
                   <div className="d-flex justify-content-between">
                     <p>Vas a recibir</p>

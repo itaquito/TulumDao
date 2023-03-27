@@ -26,7 +26,7 @@ const chains = [polygonMumbai]
 export default function App({ Component, pageProps }: AppProps) {
   return(
     <Web3Provider appName='Test App' chains={chains} projectId={projectId}>
-      <SmartContractProviderWrapper address='0x7E5d1bd04280E1Ca2c5Aa2567fA5184094Fc87E5' abi={abi}>
+      <SmartContractProviderWrapper address='0xAC1e5E3Ef7CEE6b26a81C8Fc19D13Cd63B7701c3' abi={abi}>
         <Head>
           <link rel="stylesheet" href="https://use.typekit.net/owo4gkq.css" />
         </Head>

@@ -1,6 +1,6 @@
 import { useWeb3Modal } from "@web3modal/react";
 import { useRouter } from "next/router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useMemo } from "react";
 import {
   Badge, Col,
   Container, Form, Modal, Row, Spinner
@@ -35,12 +35,13 @@ const ContainerW50 = styled(Row)`
 
 type State = {
     kyc?: ModalData,
-    eula: boolean
+    eula: boolean,
+    tokenIndex: number
 }
 
 export default function Investment() {
   const { open } = useWeb3Modal();
-  const [state, setState] = useState<State>({eula: false}) //TODO: do something with the data
+  const [state, setState] = useState<State>({eula: false, tokenIndex: 0}) //TODO: do something with the data
   const [showModal, setShowModal] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
   const [mintWhenConnected, setMintWhenConnected] = useState(false)
@@ -59,45 +60,18 @@ export default function Investment() {
     setState((prev)=>({...prev, kyc: data}))
   }, []);
   const { address } = useAccount();
-  const [amount, setAmount] = useState(0);
-  const { read } = useSmartContract();
-  /*const mint = useCallback(()=>{
-        write("mint", [address, amount , 0])
-        .then((r) => (r as any).write())
-        .catch((e) => console.error(e))
-    },[write, address, amount])
-    */
-  const { config } = usePrepareContractWrite({
-    address: "0xAC1e5E3Ef7CEE6b26a81C8Fc19D13Cd63B7701c3",
-    abi: [
-      {
-        inputs: [
-          {
-            internalType: "address",
-            name: "_to",
-            type: "address",
-          },
-          {
-            internalType: "uint256",
-            name: "_mintAmount",
-            type: "uint256",
-          },
-          {
-            internalType: "uint256",
-            name: "_pid",
-            type: "uint256",
-          },
-        ],
-        name: "mint",
-        outputs: [],
-        stateMutability: "payable",
-        type: "function",
-      },
-    ],
+  const [amount, setAmount] = useState(1);
+  const { read, getABI, contractAddress } = useSmartContract();
+  const ABI = useMemo(()=>{
+    return getABI("mint")
+  },[getABI])
+  const prepareContract = usePrepareContractWrite({
+    address: contractAddress,
+    abi: [ABI],
     functionName: "mint",
-    args: [address as any, amount as any, 0 as any],
+    args: [address, amount, state.tokenIndex]
   });
-  const { write, isLoading, isSuccess, isError, error } = useContractWrite(config);
+  const { write, isLoading, isSuccess, isError, error } = useContractWrite(prepareContract.config);
   const onMint = useCallback(async ()=>{
     if(amount <= 0) return;
     if(!address){
@@ -122,10 +96,20 @@ export default function Investment() {
   },[isSuccess])
   const [price, setPrice] = useState(0)
   useEffect(()=>{
-    read("AllowedCrypto", [0]).then((res: any)=>{
+    read("AllowedCrypto", [state.tokenIndex]).then((res: any)=>{
       setPrice(res[1].toNumber())
     })
-  },[read])
+  },[read, state.tokenIndex])
+  const [canMint, setCanMint] = useState<boolean>(true)
+  useEffect(()=>{
+    if(prepareContract.error && address && amount){
+      read("canMint", [ amount, state.tokenIndex]).then((res: any)=>{
+        setCanMint(res)
+      })
+    }else{
+      setCanMint(true)
+    }
+  },[read, prepareContract.error, address, amount, state.tokenIndex])
   return (
     <>
       <KYCModal visible={showModal} onHide={hideModal} onSubmit={submitModal} />
@@ -208,8 +192,11 @@ export default function Investment() {
                       <Form.Label className="fw-bold">Amount</Form.Label>
                       <Form.Control
                         onChange={({ target }) =>
-                          setAmount(parseInt(target.value))
+                          setAmount(target.value ? parseInt(target.value) : 0)
                         }
+                        type="number"
+                        min={1}
+                        defaultValue={1}
                       />
                       <Form.Text className="text-muted">
                         Balance{" "}
@@ -239,14 +226,17 @@ export default function Investment() {
                   </div> */}
                 </Container>
                 <BtnGreen
-                  disabled={amount <= 0 || isLoading}
+                  disabled={amount <= 0 || isLoading || prepareContract.isError || prepareContract.isLoading}
                   onClick={onMint}
                   className="w-100 my-2"
                   style={{ height: "3rem" }}
                 >
-                  {isLoading && <><Spinner size="sm"/>{" "}</>}
+                  {(isLoading ||  prepareContract.isLoading) && <><Spinner size="sm"/>{" "}</>}
                   Comprar con Metamask
                 </BtnGreen>
+                <div className="text-muted text-center">
+                  {!canMint && "¡Saldo insuficiente!"}
+                </div>
                 {/* <BtnGreen className="w-100 my-2" style={{ height: "3rem" }}>
                   Comprar con tarjeta de crédito
                 </BtnGreen> */}

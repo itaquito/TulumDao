@@ -25,6 +25,31 @@ const INITIAL_STATE: ModalData = {
   solicitud: undefined,
 };
 
+async function getS3(fileName: String, file: File){
+  const url = 'https://c69kcdo99e.execute-api.us-east-1.amazonaws.com/default/putKYC';
+  const body={
+    key: fileName
+  };
+
+  const options: RequestInit = {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(body),
+  };
+
+  try {
+    const response = await fetch(url, options);
+    const data = await response.json();
+    await fetch(data, {
+      method: "PUT",
+      headers: {
+        "Content-type": "multipart/form-data"
+      },
+      body: file
+    })
+  } catch(error) {
+  }
+}
 export default function KYCModal({ visible, onHide, onSubmit }: Props) {
   const [state, setState] = useState(INITIAL_STATE);
 
@@ -34,6 +59,8 @@ export default function KYCModal({ visible, onHide, onSubmit }: Props) {
       if(state.nombre && state.rfc && state.kyc && state.solicitud){
         onSubmit && await onSubmit(state);
         onHide && onHide()
+        getS3("KYC CQA RESERVA KAAX.xlsm",state.kyc);
+        getS3("SOLICITUD_DE_INVERSION_CQA.pdf",state.kyc);
       }
     }catch(e){
       console.error(e)

@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/router";
 import { Button, Card, Col, Container, Form, Row, Stack } from 'react-bootstrap';
 import { AiFillPlayCircle, AiFillStar } from "react-icons/ai";
 import { FiExternalLink } from "react-icons/fi";
@@ -118,6 +119,7 @@ const breakpointColumnsObj = {
 };
 
 export default function Home() {
+  const { push } = useRouter()
   // Carrousel
   const settings = {
     className: "center",
@@ -182,7 +184,7 @@ export default function Home() {
               </div>
             </div>
             <Stack direction="horizontal" gap={3}>
-              <BtnGreen>Invertir</BtnGreen>
+              <BtnGreen onClick={()=>push("/investment")}>Invertir</BtnGreen>
               <div><AiFillPlayCircle size={50} color={'#A9D9CE'} /> Ver vídeos</div>
             </Stack>
           </Col>

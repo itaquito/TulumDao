@@ -1,11 +1,13 @@
 import { useWeb3Modal } from "@web3modal/react";
 import { google } from "googleapis";
+import { useRouter } from "next/router";
 import { useEffect, useMemo, useState } from "react";
-import { Container, Stack } from "react-bootstrap";
+import { Container, Spinner, Stack } from "react-bootstrap";
 import "slick-carousel/slick/slick-theme.css";
 import "slick-carousel/slick/slick.css";
 import { useAccount } from "wagmi";
 import { BtnGreen } from "../../src/components/BtnGreen";
+import BtnGreenSquared from "../../src/components/BtnGreenSquared";
 import Card from "../../src/components/Card/Card";
 import Notification from "../../src/components/Notification";
 import ProgressCircle from "../../src/components/ProgressCircle/ProgressCircle";
@@ -13,8 +15,15 @@ import TokenCard from "../../src/components/TokenCard";
 import { useSmartContract } from "../../src/lib/providers/SmartContractProvider";
 import classes from "../../styles/Dashboard.module.css";
 
+const USD_VALUE = 120;
+
+function numberWithCommas(x: number) {
+  return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
 export async function getServerSideProps() {
   const auth = await google.auth.getClient({
+    credentials: JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS as any),
     scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"],
   });
 
@@ -39,24 +48,68 @@ export default function Dashboard({ data }: { data: string[] }) {
   const { open } = useWeb3Modal();
   const { read } = useSmartContract();
   const [vouchers, setVouchers] = useState([]);
+  const [totalSuply, setTotalSuply] = useState<number>(0);
+  const [nOwners, setNOwners] = useState<number>(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const { push } = useRouter();
   useEffect(() => {
     if (!address) return;
     read("getWallet", [address])
-      .then((r) => setVouchers(r as any))
+      .then((r) => {
+        setVouchers(r as any);
+        setIsLoading(false);
+      })
       .catch((e) => console.error(e));
   }, [read, address]);
+
+  useEffect(() => {
+    read("totalSupply").then(async (r) => {
+      const nTokens: number = (r as any).toNumber();
+      setTotalSuply(nTokens);
+      const owners = new Map<string, any>();
+      for (let i = 1; i <= nTokens; i++) {
+        const res = await read("ownerOf", [i]);
+        owners.set(`${res}`, true);
+        setNOwners(owners.size);
+      }
+    });
+  }, [read]);
 
   const filteredData = useMemo(() => {
     if (!address) return [];
     if (!data) return [];
-    return data.filter((t) => t[0] === address);
+    return data.filter(
+      (t) => t[0].trim().length <= 0 || t[0].includes(address)
+    );
   }, [data, address]);
 
-  useEffect(()=>{
-    if(!address){
-      open()
+  useEffect(() => {
+    if (!address) {
+      open();
     }
-  },[address, open])
+  }, [address, open]);
+
+  if (isLoading) {
+    return (
+      <Container className="my-5">
+        <div className="w-100 text-center" style={{ minHeight: "60vh" }}>
+          <Spinner />
+        </div>
+      </Container>
+    );
+  }
+
+  if (vouchers.length <= 0) {
+    return (<Container className="my-5">
+      <div className="w-100 text-center" style={{ minHeight: "60vh" }}>
+        <BtnGreenSquared
+          onClick={() => push("/investment")}
+        >
+          Invertir
+        </BtnGreenSquared>
+      </div>
+    </Container>);
+  }
 
   return (
     <>
@@ -70,19 +123,25 @@ export default function Dashboard({ data }: { data: string[] }) {
             <h4 className={`${classes["grid-title"]}`}>
               Fondos recaudados por Reserva Kaax
             </h4>
-            <p className={`${classes["grid-text"]}`}>$5,000,000 USD</p>
+            <p className={`${classes["grid-text"]}`}>
+              ${numberWithCommas(totalSuply * USD_VALUE)} USD
+            </p>
           </Card>
 
           <Card className={`${classes["grid-item3"]}`}>
             <h4 className={`${classes["grid-title"]}`}>
               Número de inversionistas
             </h4>
-            <p className={`${classes["grid-text"]}`}>46 inversionistas</p>
+            <p className={`${classes["grid-text"]}`}>
+              {numberWithCommas(nOwners)} inversionistas
+            </p>
           </Card>
 
           <Card className={`${classes["grid-item4"]}`}>
             <h4 className={`${classes["grid-title"]}`}>Tu inversión</h4>
-            <p className={`${classes["grid-text"]}`}>$40,000 USD</p>
+            <p className={`${classes["grid-text"]}`}>
+              ${numberWithCommas(vouchers.length * USD_VALUE)} USD
+            </p>
           </Card>
 
           <Card className={`${classes["grid-item5"]}`}>
@@ -239,6 +298,7 @@ export default function Dashboard({ data }: { data: string[] }) {
                 padding: "0rem 2rem",
                 whiteSpace: "nowrap",
               }}
+              onClick={() => push("/investment")}
             >
               Volver a Invertir
             </BtnGreen>
@@ -261,13 +321,15 @@ export default function Dashboard({ data }: { data: string[] }) {
           </Stack>
 
           <Stack gap={4}>
-            {filteredData.map((t, idx)=><Notification
-              key={idx}
-              asunto={t[1]}
-              detalles={t[2]}
-              tipo={t[3]}
-              variant={idx === 0 ? "success" : undefined}
-            />)}
+            {filteredData.map((t, idx) => (
+              <Notification
+                key={idx}
+                asunto={t[1]}
+                detalles={t[2]}
+                tipo={t[3]}
+                variant={idx === 0 ? "success" : undefined}
+              />
+            ))}
           </Stack>
         </div>
       </Container>

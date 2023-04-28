@@ -55,7 +55,6 @@ export default function KYCModal({ visible, onHide, onSubmit }: Props) {
 
   const onSubmitCallback = useCallback(async () => {
     try{
-      console.log(state)
       if(state.nombre && state.rfc && state.kyc && state.solicitud){
         onSubmit && await onSubmit(state);
         onHide && onHide()
@@ -71,8 +70,6 @@ export default function KYCModal({ visible, onHide, onSubmit }: Props) {
       show={visible}
       onHide={onHide}
       dialogClassName="modal-dialog modal-xl"
-      
-      aria-labelledby="example-custom-modal-styling-title"
     >
       <Modal.Body className="p-5">
         <h3 className="fw-bold h4">Antes de Invertir</h3>

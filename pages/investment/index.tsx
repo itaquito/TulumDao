@@ -1,25 +1,24 @@
-import "slick-carousel/slick/slick.css";
-import "slick-carousel/slick/slick-theme.css";
-import styled from "styled-components";
-import {
-  Col,
-  Container,
-  Row,
-  Button,
-  Badge,
-  Form,
-  Stack,
-} from "react-bootstrap";
-import { TbWorld } from "react-icons/tb";
-import { BsBricks } from "react-icons/bs";
-import { HiArrowsUpDown } from "react-icons/hi2";
-import TokenCard from "../../src/components/TokenCard";
-import { BtnGreen } from "../../src/components/BtnGreen";
-import { useState, useCallback } from "react";
-import { useSmartContract } from "../../src/lib/providers/SmartContractProvider";
-import { useAccount, useContractWrite, usePrepareContractWrite } from "wagmi";
-import KYCModal, { ModalData } from "../../src/components/KYCModal";
 import { useWeb3Modal } from "@web3modal/react";
+import { useRouter } from "next/router";
+import { useCallback, useEffect, useState, useMemo } from "react";
+import {
+  Badge, Col,
+  Container, Form, Modal, Row, Spinner
+} from "react-bootstrap";
+import { BsBricks, BsCheckCircle } from "react-icons/bs";
+import { TbWorld } from "react-icons/tb";
+import "slick-carousel/slick/slick-theme.css";
+import "slick-carousel/slick/slick.css";
+import styled from "styled-components";
+import { useAccount, useContractWrite, usePrepareContractWrite } from "wagmi";
+import { BtnGreen } from "../../src/components/BtnGreen";
+import BtnGreenSquared from "../../src/components/BtnGreenSquared";
+import KYCModal, { ModalData } from "../../src/components/KYCModal";
+import TermsModal from "../../src/components/TermsModal";
+import TokenCard from "../../src/components/TokenCard";
+import TokensDropdown, { TokenState } from "../../src/components/TokensDropdown";
+import { useSmartContract } from "../../src/lib/providers/SmartContractProvider";
+import ERC20TokensProvider from "../../src/providers/ERC20TokensProvider";
 
 const ProfileImage = styled.img`
   border-radius: 50%;
@@ -38,72 +37,106 @@ const ContainerW50 = styled(Row)`
 
 type State = {
     kyc?: ModalData,
-    eula: boolean
+    eula: boolean,
+    token: TokenState
 }
+
+function numberWithCommas(x: number) {
+  return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
 
 export default function Investment() {
   const { open } = useWeb3Modal();
-  const [state, setState] = useState<State>({eula: false}) //TODO: do something with the data
+  const [state, setState] = useState<State>({eula: false, token: {symbol: "", pid: 0}}) //TODO: do something with the data
   const [showModal, setShowModal] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
+  const [mintWhenConnected, setMintWhenConnected] = useState(false)
+  const {push} = useRouter()
   const hideModal = useCallback(() => {
     setShowModal(false);
   }, []);
+  const hideTerms = useCallback(() => {
+    setShowTerms(false);
+  }, []);
+  const onAcceptTerms = useCallback(async ()=>{
+    setState((prev)=>({...prev, eula: true}))
+  },[])
+  const onChangeToken = useCallback((token: TokenState)=>{
+    setState((prev)=>({...prev, token: token}))
+  },[])
 
   const submitModal = useCallback(async (data: ModalData) => {
     setState((prev)=>({...prev, kyc: data}))
   }, []);
   const { address } = useAccount();
-  const [amount, setAmount] = useState(0);
-  //const { write } = useSmartContract();
-  /*const mint = useCallback(()=>{
-        write("mint", [address, amount , 0])
-        .then((r) => (r as any).write())
-        .catch((e) => console.error(e))
-    },[write, address, amount])
-    */
-  const { config } = usePrepareContractWrite({
-    address: "0x7E5d1bd04280E1Ca2c5Aa2567fA5184094Fc87E5",
-    abi: [
-      {
-        inputs: [
-          {
-            internalType: "address",
-            name: "_to",
-            type: "address",
-          },
-          {
-            internalType: "uint256",
-            name: "_mintAmount",
-            type: "uint256",
-          },
-          {
-            internalType: "uint256",
-            name: "_pid",
-            type: "uint256",
-          },
-        ],
-        name: "mint",
-        outputs: [],
-        stateMutability: "payable",
-        type: "function",
-      },
-    ],
+  const [amount, setAmount] = useState(1);
+  const { read, getABI, contractAddress } = useSmartContract();
+  const ABI = useMemo(()=>{
+    return getABI("mint")
+  },[getABI])
+  const prepareContract = usePrepareContractWrite({
+    address: contractAddress,
+    abi: [ABI],
     functionName: "mint",
-    args: [address as any, amount as any, 0 as any],
+    args: [address, amount, state.token.pid]
   });
-  const { write } = useContractWrite(config);
-  const onMint = useCallback(()=>{
+  const { write, isLoading, isSuccess, isError, error } = useContractWrite(prepareContract.config);
+  const onMint = useCallback(async ()=>{
     if(amount <= 0) return;
     if(!address){
         open()
+        setMintWhenConnected(true)
     }else if(write){
         write()
     }
   },[write, amount, address, open])
-  console.log(write);
+  useEffect(()=>{
+    if(mintWhenConnected && address){
+      setMintWhenConnected(false)
+      onMint()
+    }
+  },[onMint, address, mintWhenConnected])
+
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  useEffect(()=>{
+    if(isSuccess){
+      setShowSuccessModal(true)
+    }
+  },[isSuccess])
+  const [price, setPrice] = useState(0)
+  useEffect(()=>{
+    read("AllowedCrypto", [state.token.pid]).then((res: any)=>{
+      setPrice(res[1].toNumber())
+    })
+  },[read, state.token.pid])
+  const [canMint, setCanMint] = useState<boolean>(true)
+  useEffect(()=>{
+    if(prepareContract.error && address && amount){
+      read("canMint", [ amount, state.token.pid]).then((res: any)=>{
+        setCanMint(res)
+      })
+    }else{
+      setCanMint(true)
+    }
+  },[read, prepareContract.error, address, amount, state.token.pid])
   return (
     <>
       <KYCModal visible={showModal} onHide={hideModal} onSubmit={submitModal} />
+      <TermsModal visible={showTerms} onHide={hideTerms} onAccept={onAcceptTerms}/>
+      <Modal show={showSuccessModal} dialogClassName="modal-dialog modal-dialog-centered" onHide={()=>setShowSuccessModal(false)}>
+        <Modal.Title>
+          <div className="h3 p-5 text-center">¡Transacción completada de forma exitosa!</div>
+        </Modal.Title>
+        <Modal.Body>
+            <div className="text-center">
+              <div className="mb-5">
+                <BsCheckCircle size={100} className="text-success"/>
+              </div>
+              <BtnGreenSquared onClick={()=>push("/dashboard")}>Ir al Dashboard</BtnGreenSquared>
+            </div>
+        </Modal.Body>
+      </Modal>
       <ContainerW50 className="mx-auto border p-5 mt-5">
         <h1 className="fw-bold h3">Antes de Invertir</h1>
         <p>
@@ -122,7 +155,7 @@ export default function Investment() {
               Esta verificación es conducida por una compañia independiente para
               asegurarnos de cumplir con las normas y regulaciones.
             </p>
-            <BtnGreen onClick={()=>setShowModal(true)}>Completar</BtnGreen>
+            <BtnGreen disabled={state.kyc ? true : false} onClick={()=>setShowModal(true)}>Completar</BtnGreen>
           </Col>
           <Col lg={6}>
             <BsBricks
@@ -137,7 +170,7 @@ export default function Investment() {
               y la distribucion de la ganancia on-chain.
             </p>
             <fieldset disabled={state.kyc ? state.eula : true}>
-                <BtnGreen onClick={()=>setState((prev)=>({...prev, eula: true}))}>Aceptar</BtnGreen>
+                <BtnGreen onClick={()=>setShowTerms(true)}>Aceptar</BtnGreen>
             </fieldset>
           </Col>
         </Row>
@@ -148,7 +181,7 @@ export default function Investment() {
             <TokenCard></TokenCard>
           </Col>
           <Col lg={6}>
-            <Container className="w-75 mx-auto">
+            <Container className="w-75 mx-auto" style={{minHeight: 600}}>
               <Form>
                 <h1 className="fw-bold h4 text-center" color="#4A4A4A">
                   Comprar cupón de inversión
@@ -156,44 +189,21 @@ export default function Investment() {
                 <fieldset disabled={!state.eula}>
                 <Row className="mb-3">
                   <Col xs={4}>
-                    <Form.Group controlId="formGridState">
-                      <Form.Label className="fw-bold">De</Form.Label>
-                      <Form.Select defaultValue="Choose...">
-                        <option>USDT</option>
-                        <option>...</option>
-                      </Form.Select>
-                    </Form.Group>
+                    <ERC20TokensProvider>
+                      <TokensDropdown label="De" onChange={onChangeToken}/>
+                      </ERC20TokensProvider>
                   </Col>
                   <Col xs={8}>
                     <Form.Group controlId="formGridCity">
-                      <Form.Label className="fw-bold">Amount</Form.Label>
+                      <Form.Label className="fw-bold">Cantidad</Form.Label>
                       <Form.Control
                         onChange={({ target }) =>
-                          setAmount(parseInt(target.value))
+                          setAmount(target.value ? parseInt(target.value) : 0)
                         }
+                        type="number"
+                        min={1}
+                        defaultValue={1}
                       />
-                      <Form.Text className="text-muted">
-                        Balance{" "}
-                        <Badge pill bg="light" text="dark">
-                          $1,000,000.00
-                        </Badge>
-                      </Form.Text>
-                    </Form.Group>
-                  </Col>
-                </Row>
-                <HiArrowsUpDown size={32} />
-                <Row className="mt-3 mb-5">
-                  <Col xs={4}>
-                    <Form.Group controlId="formGridCity">
-                      <Form.Label>Hacia</Form.Label>
-                      <Form.Control />
-                      <Form.Text className="text-muted">Cupón</Form.Text>
-                    </Form.Group>
-                  </Col>
-                  <Col xs={8}>
-                    <Form.Group controlId="formGridCity">
-                      <Form.Label>Amount</Form.Label>
-                      <Form.Control />
                       <Form.Text className="text-muted">
                         Balance{" "}
                         <Badge pill bg="light" text="dark">
@@ -210,28 +220,33 @@ export default function Investment() {
                 >
                   <div className="d-flex justify-content-between">
                     <p>Precio</p>
-                    <p>10,000.00 USDT</p>
+                    {state.token.symbol ? <p>${numberWithCommas(price*amount)} {state.token.symbol}</p> : <p>Cargando...</p>}
+                    
                   </div>
                   <div className="d-flex justify-content-between">
                     <p>Vas a recibir</p>
-                    <p>2 cupones de inversión</p>
+                    <p>{amount} cupones de inversión</p>
                   </div>
-                  <div className="d-flex justify-content-between">
+                  {/* <div className="d-flex justify-content-between">
                     <p>Fee</p>
                     <p>1 USDT</p>
-                  </div>
+                  </div> */}
                 </Container>
                 <BtnGreen
-                  disabled={amount <= 0}
+                  disabled={amount <= 0 || isLoading || prepareContract.isError || prepareContract.isLoading}
                   onClick={onMint}
                   className="w-100 my-2"
                   style={{ height: "3rem" }}
                 >
-                  Comprar con Metamask
+                  {(isLoading ||  prepareContract.isLoading) && <><Spinner size="sm"/>{" "}</>}
+                  {state.token.symbol ? `Comprar con ${state.token.symbol}` : "Cargando..." }
                 </BtnGreen>
-                <BtnGreen className="w-100 my-2" style={{ height: "3rem" }}>
+                <div className="text-muted text-center">
+                  {!canMint && "¡Saldo insuficiente!"}
+                </div>
+                {/* <BtnGreen className="w-100 my-2" style={{ height: "3rem" }}>
                   Comprar con tarjeta de crédito
-                </BtnGreen>
+                </BtnGreen> */}
                 </fieldset>
               </Form>
             </Container>

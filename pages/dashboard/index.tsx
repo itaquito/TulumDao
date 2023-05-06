@@ -15,6 +15,7 @@ import { useAPI } from "../../src/hooks/hooks";
 import { useSmartContract } from "../../src/lib/providers/SmartContractProvider";
 import classes from "../../styles/Dashboard.module.css";
 
+
 const USD_VALUE = 120;
 
 function numberWithCommas(x: number) {

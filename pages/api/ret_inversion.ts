@@ -12,5 +12,14 @@ export default async function handler(
         res.status(500).json({ error: "Internal server error" });
         return;
     }
-    res.status(200).json({value: data[0][0]});
+    let value = data[0][0]
+    if(typeof value === 'string'){
+      value = value.replace(/[^0-9.%]/g, "")
+      const isPercentage = value.endsWith("%")
+      value = parseFloat(value)
+      if(isPercentage){
+        value /= 100
+      }
+    }
+    res.status(200).json({value});
 }

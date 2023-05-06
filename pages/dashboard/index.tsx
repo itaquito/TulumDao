@@ -26,6 +26,9 @@ export default function Dashboard() {
   const [{name: fullName}, getPrevKYC] = useAPI<{name?: string}>({
     url: "/api/registration/user", disabled: true, method: "POST", initialValue: {}
   })
+  const [{value: retInversion}] = useAPI<{value: number}>({
+    url: "/api/ret_inversion", initialValue: {value: 0}
+  })
   const { openConnectModal } = useConnectModal();
   const { read } = useSmartContract();
   const [vouchers, setVouchers] = useState([]);
@@ -144,10 +147,10 @@ export default function Dashboard() {
                 </p>
                 <div className={`${classes["info-container__summary"]} `}>
                   <p className={`${classes["info-container__currency"]} `}>
-                    $31,218.00
+                    ${numberWithCommas(vouchers.length * USD_VALUE * (1+retInversion))}
                   </p>
                   <p className={`${classes["info-container__percentage"]} `}>
-                    +83.8%
+                    +{(retInversion*100).toFixed(2)}%
                   </p>
                 </div>
               </div>

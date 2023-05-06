@@ -26,3 +26,43 @@ export function useIsVisible(): [RefSetter, boolean] {
   
     return [refSetter, isVisible];
   }
+
+interface UseAPIProps<T> {
+  url: string;
+  data?: T;
+  initialValue?: T;
+  method?: "GET" | "POST" | "PUT" | "DELETE";
+  disabled?: boolean;
+}
+
+export function useAPI<T>({url, data, initialValue, method, disabled}: UseAPIProps<T>): [T, (data?: unknown)=>Promise<T>]{
+  const [state, setState] = useState<T>(initialValue as T)
+  const fetchFunc = useCallback( async (data: any)=>{
+    const init : RequestInit= {
+      method: method ?? "GET"
+    }
+    if(data){
+      
+      if((data instanceof FormData)){
+        init.body = data
+      }else{
+        init.body = JSON.stringify(data)
+        init.headers = {
+          'Content-Type': 'application/json'
+        }
+      }
+    }
+    console.log(init)
+    const res = await fetch(url, init)
+    const resData = await res.json()
+    setState(resData)
+    return resData
+  },[method, url])
+  useEffect(()=>{
+    if(!disabled){
+      fetchFunc(data)
+    }
+  },[disabled, data, fetchFunc])
+
+  return [state, fetchFunc]
+}

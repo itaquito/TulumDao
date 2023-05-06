@@ -1,38 +1,32 @@
 import {
-  EthereumClient,
-  modalConnectors,
-  walletConnectProvider,
+  EthereumClient
 } from "@web3modal/ethereum";
-import { Web3Modal } from "@web3modal/react";
+
 import React, { createContext, useContext, useMemo } from "react";
 import { configureChains, createClient, WagmiConfig } from "wagmi";
 import { Web3ContextType, Web3ProviderProps } from "./Web3Provider.types";
+import { publicProvider } from 'wagmi/providers/public';
+import { RainbowKitProvider, getDefaultWallets } from "@rainbow-me/rainbowkit";
+import '@rainbow-me/rainbowkit/styles.css';
+
+
 
 const Web3Context = createContext<Web3ContextType|null>(null);
-
-function WalletConnectModal() {
-  const { projectId, ethereumClient } = useWeb3();
-  return (
-    <React.Fragment>
-      <Web3Modal projectId={projectId} ethereumClient={ethereumClient} />
-    </React.Fragment>
-  );
-}
 
 export default function Web3Provider(props: Web3ProviderProps) {
   const [client, value] = useMemo(() => {
     const { chains, provider, webSocketProvider } = configureChains(
       props.chains,
-      [walletConnectProvider({ projectId: props.projectId })]
+      [publicProvider()]
     );
+    const { connectors } = getDefaultWallets({
+      appName: props.appName,
+      projectId: props.projectId,
+      chains,
+    });
     const client = createClient({
       autoConnect: true,
-      connectors: modalConnectors({
-        appName: props.appName,
-        chains: chains,
-        projectId: props.projectId,
-        version: "2",
-      }),
+      connectors,
       provider,
       webSocketProvider,
     } as any);
@@ -50,8 +44,9 @@ export default function Web3Provider(props: Web3ProviderProps) {
   return (
     <Web3Context.Provider value={value}>
       <WagmiConfig client={client}>
-        {props.children}
-        <WalletConnectModal/>
+        <RainbowKitProvider chains={props.chains}>
+          {props.children}
+        </RainbowKitProvider>
       </WagmiConfig>
     </Web3Context.Provider>
   );

@@ -1,7 +1,7 @@
-import { useWeb3Modal, Web3Button } from '@web3modal/react'
 import { useAccount } from 'wagmi'
 import { Container, Navbar, Offcanvas, Nav, Button } from "react-bootstrap";
 import styled from 'styled-components';
+import { ConnectButton } from '@rainbow-me/rainbowkit';
 
 const ContainerW75 = styled(Container)`
   @media(min-width: 768px) {
@@ -10,9 +10,6 @@ const ContainerW75 = styled(Container)`
 `;
 
 export default function Header() {
-  const { isConnected } = useAccount()
-  const { open } = useWeb3Modal()
-
   return(
     <Navbar bg="light" expand={false} className="mb-1 shadow">
       <ContainerW75 fluid>
@@ -21,7 +18,7 @@ export default function Header() {
           <img src="https://drive.google.com/uc?export=view&id=1ZY92ntjH1UWEW4-61cRL1p-L1J_O4ac8" className="img-fluid w-75" />
         </Navbar.Brand>
         <div className='d-none d-sm-block'>
-          <Web3Button />
+          <ConnectButton />
         </div>
         <Navbar.Offcanvas
           id={`offcanvasNavbar-false-${false}`}
@@ -39,7 +36,7 @@ export default function Header() {
               <Nav.Link href="/marketplace">Marketplace</Nav.Link>
             </Nav>
             <div className='d-block d-sm-none m-0 mt-1'>
-              <Web3Button />
+              <ConnectButton />
             </div>
           </Offcanvas.Body>
         </Navbar.Offcanvas>

@@ -40,7 +40,7 @@ export default function TokenCard(props: any) {
         <p className="fw-light" style={{ fontSize: "0.9rem" }}>
           Token id: 1
         </p>
-        <p className="fw-bold m-0">Paulo Gonzales</p>
+        <p className="fw-bold m-0">{props.name ?? ""}</p>
         <p className="fw-light m-0" style={{ fontSize: "0.8rem" }}>
           Fecha de maduración: 22/03/2023
         </p>

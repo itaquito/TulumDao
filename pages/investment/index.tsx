@@ -1,6 +1,6 @@
-import { useWeb3Modal } from "@web3modal/react";
+import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { useRouter } from "next/router";
-import { useCallback, useEffect, useState, useMemo } from "react";
+import { useCallback, useEffect, useState, useMemo, use } from "react";
 import {
   Badge, Col,
   Container, Form, Modal, Row, Spinner
@@ -19,6 +19,7 @@ import TokenCard from "../../src/components/TokenCard";
 import TokensDropdown, { TokenState } from "../../src/components/TokensDropdown";
 import { useSmartContract } from "../../src/lib/providers/SmartContractProvider";
 import ERC20TokensProvider from "../../src/providers/ERC20TokensProvider";
+import { useAPI } from "../../src/hooks/hooks";
 
 const ProfileImage = styled.img`
   border-radius: 50%;
@@ -47,13 +48,19 @@ function numberWithCommas(x: number) {
 
 
 export default function Investment() {
-  const { open } = useWeb3Modal();
+  const { openConnectModal } = useConnectModal();
+  const [prevKYC, getPrevKYC] = useAPI<{is_new: boolean, name?: string}>({
+    url: "/api/registration/user", disabled: true, method: "POST", initialValue: {is_new: true}
+  })
+  const [, uploadKYC] = useAPI<{success: boolean, message?: string}>({
+    url: "/api/registration/register", disabled: true, method: "POST"
+  })
   const [state, setState] = useState<State>({eula: false, token: {symbol: "", pid: 0}}) //TODO: do something with the data
-  const [showModal, setShowModal] = useState(false);
+  const [showKYC, setShowModal] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
   const [mintWhenConnected, setMintWhenConnected] = useState(false)
   const {push} = useRouter()
-  const hideModal = useCallback(() => {
+  const hideKYC = useCallback(() => {
     setShowModal(false);
   }, []);
   const hideTerms = useCallback(() => {
@@ -65,11 +72,32 @@ export default function Investment() {
   const onChangeToken = useCallback((token: TokenState)=>{
     setState((prev)=>({...prev, token: token}))
   },[])
-
-  const submitModal = useCallback(async (data: ModalData) => {
-    setState((prev)=>({...prev, kyc: data}))
-  }, []);
   const { address } = useAccount();
+
+  const submitKYC = useCallback(async (data: ModalData) => {
+    if(!address){
+      return;
+    }
+    const formData  = new FormData();
+    for(const name of Object.keys(data)) {
+      formData.append(name, (data as any)[name]);
+    }
+    formData.append("address", address)
+    const res = await uploadKYC(formData)
+    if(res.success){
+      setState((prev)=>({...prev, kyc: data}))
+    }else{
+      alert(res.message ?? "Error desconocido")
+    }
+    
+  }, [address, uploadKYC]);
+
+  useEffect(()=>{
+    if(!address && openConnectModal){
+      openConnectModal()
+    }
+  },[address, openConnectModal])
+  
   const [amount, setAmount] = useState(1);
   const { read, getABI, contractAddress } = useSmartContract();
   const ABI = useMemo(()=>{
@@ -84,13 +112,13 @@ export default function Investment() {
   const { write, isLoading, isSuccess, isError, error } = useContractWrite(prepareContract.config);
   const onMint = useCallback(async ()=>{
     if(amount <= 0) return;
-    if(!address){
-        open()
+    if(!address && openConnectModal){
+        openConnectModal()
         setMintWhenConnected(true)
     }else if(write){
         write()
     }
-  },[write, amount, address, open])
+  },[write, amount, address, openConnectModal])
   useEffect(()=>{
     if(mintWhenConnected && address){
       setMintWhenConnected(false)
@@ -120,9 +148,15 @@ export default function Investment() {
       setCanMint(true)
     }
   },[read, prepareContract.error, address, amount, state.token.pid])
+
+  useEffect(()=>{
+    if(address){
+      getPrevKYC({address: address})
+    }
+  },[address, getPrevKYC])
   return (
     <>
-      <KYCModal visible={showModal} onHide={hideModal} onSubmit={submitModal} />
+      <KYCModal visible={showKYC} onHide={hideKYC} onSubmit={submitKYC} />
       <TermsModal visible={showTerms} onHide={hideTerms} onAccept={onAcceptTerms}/>
       <Modal show={showSuccessModal} dialogClassName="modal-dialog modal-dialog-centered" onHide={()=>setShowSuccessModal(false)}>
         <Modal.Title>
@@ -155,7 +189,7 @@ export default function Investment() {
               Esta verificación es conducida por una compañia independiente para
               asegurarnos de cumplir con las normas y regulaciones.
             </p>
-            <BtnGreen disabled={state.kyc ? true : false} onClick={()=>setShowModal(true)}>Completar</BtnGreen>
+            <BtnGreen disabled={(!prevKYC.is_new || state.kyc) ? true : false} onClick={()=>setShowModal(true)}>Completar</BtnGreen>
           </Col>
           <Col lg={6}>
             <BsBricks
@@ -178,7 +212,7 @@ export default function Investment() {
       <Container style={{ paddingTop: "5rem", paddingBottom: "7rem" }}>
         <Row>
           <Col className="pb-5" lg={6}>
-            <TokenCard></TokenCard>
+            <TokenCard name={prevKYC.name ?? state.kyc?.name}/>
           </Col>
           <Col lg={6}>
             <Container className="w-75 mx-auto" style={{minHeight: 600}}>
@@ -186,7 +220,7 @@ export default function Investment() {
                 <h1 className="fw-bold h4 text-center" color="#4A4A4A">
                   Comprar cupón de inversión
                 </h1>
-                <fieldset disabled={!state.eula}>
+                <fieldset disabled={!state.eula && prevKYC.is_new}>
                 <Row className="mb-3">
                   <Col xs={4}>
                     <ERC20TokensProvider>

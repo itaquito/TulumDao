@@ -1,7 +1,6 @@
-import { useWeb3Modal } from "@web3modal/react";
-import { google } from "googleapis";
+import { useConnectModal } from "@rainbow-me/rainbowkit";
 import { useRouter } from "next/router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Container, Spinner, Stack } from "react-bootstrap";
 import "slick-carousel/slick/slick-theme.css";
 import "slick-carousel/slick/slick.css";
@@ -12,6 +11,7 @@ import Card from "../../src/components/Card/Card";
 import Notification from "../../src/components/Notification";
 import ProgressCircle from "../../src/components/ProgressCircle/ProgressCircle";
 import TokenCard from "../../src/components/TokenCard";
+import { useAPI } from "../../src/hooks/hooks";
 import { useSmartContract } from "../../src/lib/providers/SmartContractProvider";
 import classes from "../../styles/Dashboard.module.css";
 
@@ -21,36 +21,21 @@ function numberWithCommas(x: number) {
   return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
-export async function getServerSideProps() {
-  const auth = await google.auth.getClient({
-    credentials: JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS as any),
-    scopes: ["https://www.googleapis.com/auth/spreadsheets.readonly"],
-  });
-
-  const sheets = google.sheets({ version: "v4", auth });
-
-  const range = `Dashboard!A:D`;
-
-  const response: any = await sheets.spreadsheets.values.get({
-    spreadsheetId: process.env.SHEET_ID,
-    range,
-  });
-
-  return {
-    props: {
-      data: response.data.values,
-    },
-  };
-}
-
-export default function Dashboard({ data }: { data: string[] }) {
+export default function Dashboard() {
   const { address } = useAccount();
-  const { open } = useWeb3Modal();
+  const [{name: fullName}, getPrevKYC] = useAPI<{name?: string}>({
+    url: "/api/registration/user", disabled: true, method: "POST", initialValue: {}
+  })
+  const [{value: retInversion}] = useAPI<{value: number}>({
+    url: "/api/ret_inversion", initialValue: {value: 0}
+  })
+  const { openConnectModal } = useConnectModal();
   const { read } = useSmartContract();
   const [vouchers, setVouchers] = useState([]);
   const [totalSuply, setTotalSuply] = useState<number>(0);
   const [nOwners, setNOwners] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [data, fetchData] = useAPI<string[]>({url: `/api/dashboard/${address}`, disabled: true, initialValue: []})
   const { push } = useRouter();
   useEffect(() => {
     if (!address) return;
@@ -75,19 +60,18 @@ export default function Dashboard({ data }: { data: string[] }) {
     });
   }, [read]);
 
-  const filteredData = useMemo(() => {
-    if (!address) return [];
-    if (!data) return [];
-    return data.filter(
-      (t) => t[0].trim().length <= 0 || t[0].includes(address)
-    );
-  }, [data, address]);
+  useEffect(()=>{
+    if(address){
+      fetchData()
+      getPrevKYC({address: address})
+    }
+  },[address, fetchData, getPrevKYC])
 
   useEffect(() => {
-    if (!address) {
-      open();
+    if (!address && openConnectModal) {
+      openConnectModal();
     }
-  }, [address, open]);
+  }, [address, openConnectModal]);
 
   if (isLoading) {
     return (
@@ -116,7 +100,7 @@ export default function Dashboard({ data }: { data: string[] }) {
       <Container className="my-5">
         <div className={`${classes["grid-container"]}`}>
           <div className={`${classes["grid-item1"]}`}>
-            <TokenCard type="grid"></TokenCard>
+            <TokenCard type="grid" name={fullName}/>
           </div>
 
           <Card className={`${classes["grid-item2"]}`}>
@@ -163,10 +147,10 @@ export default function Dashboard({ data }: { data: string[] }) {
                 </p>
                 <div className={`${classes["info-container__summary"]} `}>
                   <p className={`${classes["info-container__currency"]} `}>
-                    $31,218.00
+                    ${numberWithCommas(vouchers.length * USD_VALUE * (1+retInversion))}
                   </p>
                   <p className={`${classes["info-container__percentage"]} `}>
-                    +83.8%
+                    +{(retInversion*100).toFixed(2)}%
                   </p>
                 </div>
               </div>
@@ -316,12 +300,12 @@ export default function Dashboard({ data }: { data: string[] }) {
                 backgroundColor: "#122620",
               }}
             >
-              {filteredData.length}
+              {data.length}
             </span>
           </Stack>
 
           <Stack gap={4}>
-            {filteredData.map((t, idx) => (
+            {data.map((t, idx) => (
               <Notification
                 key={idx}
                 asunto={t[1]}

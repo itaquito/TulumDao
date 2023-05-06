@@ -52,9 +52,11 @@ async function getS3(fileName: String, file: File){
 }
 export default function KYCModal({ visible, onHide, onSubmit }: Props) {
   const [state, setState] = useState(INITIAL_STATE);
+  const [disabled, setDisabled] = useState(false)
 
   const onSubmitCallback = useCallback(async () => {
     try{
+      setDisabled(true)
       if(state.name && state.rfc && state.kyc && state.doc){
         onSubmit && await onSubmit(state);
         onHide && onHide()
@@ -63,6 +65,8 @@ export default function KYCModal({ visible, onHide, onSubmit }: Props) {
       }
     }catch(e){
       console.error(e)
+    }finally{
+      setDisabled(false)
     }
   }, [onSubmit, onHide, state]);
   return (
@@ -141,7 +145,7 @@ export default function KYCModal({ visible, onHide, onSubmit }: Props) {
             </Form.Group>
           </Col>
           <Col xs="12" className="text-center">
-            <BtnGreenSquared className="mt-3 mb-2" onClick={onSubmitCallback}>Subir</BtnGreenSquared>
+            <BtnGreenSquared disabled={disabled} className="mt-3 mb-2" onClick={onSubmitCallback}>Subir</BtnGreenSquared>
           </Col>
         </Row>
       </Modal.Body>

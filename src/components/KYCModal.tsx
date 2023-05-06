@@ -6,10 +6,10 @@ import BtnGreenSquared from "./BtnGreenSquared";
 import UploadInput from "./UploadInput";
 
 export type ModalData = {
-  nombre: string;
+  name: string;
   rfc: string;
   kyc?: File;
-  solicitud?: File;
+  doc?: File;
 };
 
 type Props = {
@@ -19,10 +19,10 @@ type Props = {
 };
 
 const INITIAL_STATE: ModalData = {
-  nombre: "",
+  name: "",
   rfc: "",
   kyc: undefined,
-  solicitud: undefined,
+  doc: undefined,
 };
 
 export default function KYCModal({ visible, onHide, onSubmit }: Props) {
@@ -30,7 +30,7 @@ export default function KYCModal({ visible, onHide, onSubmit }: Props) {
 
   const onSubmitCallback = useCallback(async () => {
     try{
-      if(state.nombre && state.rfc && state.kyc && state.solicitud){
+      if(state.name && state.rfc && state.kyc && state.doc){
         onSubmit && await onSubmit(state);
         onHide && onHide()
       }
@@ -88,7 +88,7 @@ export default function KYCModal({ visible, onHide, onSubmit }: Props) {
               <Col>
                 <div className="w-100 box px-3">
                   <div className="fw-bold pt-3 pb-2">Sube tu documento completado</div>
-                  <UploadInput onChange={(f)=>setState(prev=>({...prev, solicitud: f}))} className="mb-3"/>
+                  <UploadInput onChange={(f)=>setState(prev=>({...prev, doc: f}))} className="mb-3"/>
                 </div>
               </Col>
             </Row>
@@ -97,7 +97,7 @@ export default function KYCModal({ visible, onHide, onSubmit }: Props) {
             <Form.Group className="py-2" controlId="info">
               <Form.Control
                 onChange={({target}) =>
-                  setState((prev) => ({ ...prev, nombre: target.value }))
+                  setState((prev) => ({ ...prev, name: target.value }))
                 }
                 type="text"
                 placeholder="Nombre Completo"

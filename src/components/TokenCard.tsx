@@ -20,7 +20,14 @@ const CardContainer = styled(Container)`
   );
 `;
 
-export default function TokenCard(props: any) {
+export interface TokenCardProps{
+  type?: "grid",
+  name?: string,
+  id?: number,
+  date?: string
+}
+
+export default function TokenCard(props: TokenCardProps) {
   return (
     <CardContainer
       className=" px-2 py-4 text-light"
@@ -38,11 +45,11 @@ export default function TokenCard(props: any) {
       <Container className="pt-3">
         <p className="fw-bold m-0">Miembro Tulum</p>
         <p className="fw-light" style={{ fontSize: "0.9rem" }}>
-          Token id: 1
+          {props.id === undefined ? "" : `Token id: ${props.id}`}
         </p>
         <p className="fw-bold m-0">{props.name ?? ""}</p>
         <p className="fw-light m-0" style={{ fontSize: "0.8rem" }}>
-          Fecha de maduración: 22/03/2023
+          {props.date ? `Fecha de maduración: ${props.date}`  : ""}
         </p>
       </Container>
     </CardContainer>

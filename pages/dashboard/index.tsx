@@ -14,17 +14,18 @@ import TokenCard from "../../src/components/TokenCard";
 import { useAPI } from "../../src/hooks/hooks";
 import { useSmartContract } from "../../src/lib/providers/SmartContractProvider";
 import classes from "../../styles/Dashboard.module.css";
+import LoadingContainer from "../../src/components/LoadingContainer";
 
 
 const USD_VALUE = 120;
 
 function numberWithCommas(x: number) {
-  return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  return x.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
 export default function Dashboard() {
   const { address } = useAccount();
-  const [{name: fullName}, getPrevKYC] = useAPI<{name?: string}>({
+  const [userData, getPrevKYC] = useAPI<{name?: string, user_id?: number, created_at?: string}>({
     url: "/api/registration/user", disabled: true, method: "POST", initialValue: {}
   })
   const [{value: retInversion}] = useAPI<{value: number}>({
@@ -77,9 +78,7 @@ export default function Dashboard() {
   if (isLoading) {
     return (
       <Container className="my-5">
-        <div className="w-100 text-center" style={{ minHeight: "60vh" }}>
-          <Spinner />
-        </div>
+        <LoadingContainer style={{ minHeight: "60vh" }} isLoading/>
       </Container>
     );
   }
@@ -101,7 +100,7 @@ export default function Dashboard() {
       <Container className="my-5">
         <div className={`${classes["grid-container"]}`}>
           <div className={`${classes["grid-item1"]}`}>
-            <TokenCard type="grid" name={fullName}/>
+            <TokenCard type="grid" name={userData.name} date={userData.created_at} id={userData.user_id}/>
           </div>
 
           <Card className={`${classes["grid-item2"]}`}>
@@ -148,7 +147,7 @@ export default function Dashboard() {
                 </p>
                 <div className={`${classes["info-container__summary"]} `}>
                   <p className={`${classes["info-container__currency"]} `}>
-                    ${numberWithCommas(vouchers.length * USD_VALUE * (1+retInversion))}
+                    ${numberWithCommas(vouchers.length * USD_VALUE * (retInversion))} USD
                   </p>
                   <p className={`${classes["info-container__percentage"]} `}>
                     +{(retInversion*100).toFixed(2)}%
@@ -160,7 +159,7 @@ export default function Dashboard() {
                   Total Recibido
                 </p>
                 <p className={`${classes["info-container__currency"]} `}>
-                  $71,218.00 USD
+                ${numberWithCommas(vouchers.length * USD_VALUE * (1+retInversion))} USD
                 </p>
               </div>
             </div>

@@ -71,8 +71,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
 
         const row = (existingUsers?.length ?? 0) + 1;
-        const success = await googleService.updateCells(`Users!A${row}:E${row}`, [
-            [address, name, rfc, getDriveShareLink(kycFileId), getDriveShareLink(docFileId)],
+        const now = new Date();
+        const success = await googleService.updateCells(`Users!A${row}:F${row}`, [
+            [address, name, rfc, getDriveShareLink(kycFileId), getDriveShareLink(docFileId), now.toISOString()],
         ]);
 
         createResponse(res, success, success ? undefined : "Error desconocido. Reintente más tarde");

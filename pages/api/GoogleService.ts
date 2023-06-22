@@ -17,6 +17,19 @@ export default class GoogleService{
         return res.data.values;
     }
 
+    async getSheetsBatch(...ranges: string[]) {
+        const sheets = google.sheets({ version: "v4", auth: this.auth });
+        const res = await sheets.spreadsheets.values.batchGet({
+            spreadsheetId: process.env.SHEET_ID,
+            ranges,
+        });
+        const values : any[][][] = []
+        for (const range of res.data.valueRanges ?? []) {
+            values.push(range.values ?? [])
+        }
+        return values;
+    }
+
     async updateCells(range:string, values: any[][]) {
         const sheets = google.sheets({ version: "v4", auth: this.auth });
         const res = await sheets.spreadsheets.values.update({

@@ -9,13 +9,14 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@web3modal/ethereum": "^2.3.7",
     "@rainbow-me/rainbowkit": "^0.12.12",
+    "@web3modal/ethereum": "^2.3.7",
     "bootstrap": "^5.2.2",
     "ethers": "^5.0.0",
     "formidable": "^2.1.1",
     "googleapis": "^113.0.0",
     "i18next": "^22.0.6",
+    "moment": "^2.29.4",
     "next": "13.2.3",
     "next-i18next": "^13.0.0",
     "react": "18.2.0",

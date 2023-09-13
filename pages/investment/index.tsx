@@ -139,7 +139,7 @@ export default function Investment() {
   const [price, setPrice] = useState(0);
   useEffect(() => {
     read("AllowedCrypto", [state.token.pid]).then((res: any) => {
-      setPrice(res[1].toNumber());
+      setPrice(Number(res[1]));
     });
   }, [read, state.token.pid]);
   const [canMint, setCanMint] = useState<boolean>(true);

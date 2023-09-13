@@ -2,8 +2,9 @@ import {
   EthereumClient
 } from "@web3modal/ethereum";
 
+
 import React, { createContext, useContext, useMemo } from "react";
-import { configureChains, createClient, WagmiConfig } from "wagmi";
+import { configureChains, createConfig, WagmiConfig } from "wagmi";
 import { Web3ContextType, Web3ProviderProps } from "./Web3Provider.types";
 import { publicProvider } from 'wagmi/providers/public';
 import { RainbowKitProvider, getDefaultWallets } from "@rainbow-me/rainbowkit";
@@ -13,9 +14,9 @@ import '@rainbow-me/rainbowkit/styles.css';
 
 const Web3Context = createContext<Web3ContextType|null>(null);
 
-export default function Web3Provider(props: Web3ProviderProps) {
-  const [client, value] = useMemo(() => {
-    const { chains, provider, webSocketProvider } = configureChains(
+export default function Web3Provider(props: Web3ProviderProps) { 
+  const [config, value] = useMemo(() => {
+    const { chains, publicClient, webSocketPublicClient } = configureChains(
       props.chains,
       [publicProvider()]
     );
@@ -24,15 +25,16 @@ export default function Web3Provider(props: Web3ProviderProps) {
       projectId: props.projectId,
       chains,
     });
-    const client = createClient({
+    const config = createConfig({
       autoConnect: true,
+      publicClient,
+      webSocketPublicClient,
       connectors,
-      provider,
-      webSocketProvider,
-    } as any);
-    const ethereumClient = new EthereumClient(client, chains);
+    })
+    
+    const ethereumClient = new EthereumClient(config, chains);
     return [
-      client,
+      config,
       {
         chains: chains,
         ethereumClient: ethereumClient,
@@ -43,7 +45,7 @@ export default function Web3Provider(props: Web3ProviderProps) {
 
   return (
     <Web3Context.Provider value={value}>
-      <WagmiConfig client={client}>
+      <WagmiConfig config={config}>
         <RainbowKitProvider chains={props.chains}>
           {props.children}
         </RainbowKitProvider>
